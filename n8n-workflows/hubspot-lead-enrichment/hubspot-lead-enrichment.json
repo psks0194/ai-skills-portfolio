@@ -1,0 +1,153 @@
+{
+  "name": "hubspot-lead-enrichment",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "92ce8b84-969b-4c91-8b6d-21e2c9253014",
+      "name": "When chat message received",
+      "webhookId": "66c8438d-3e2c-4c3f-9d82-beae1a1e0943"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01 "
+            },
+            {
+              "name": "content-type ",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 1000,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Research this company and return ONLY valid JSON, no markdown, no backticks: {{ $json.chatInput }}\\n\\nReturn this exact structure:\\n{\\\"first_name\\\": \\\"founder or CEO first name\\\", \\\"last_name\\\": \\\"founder or CEO last name\\\", \\\"email\\\": \\\"company's general contact email or best guess format like info@domain.com\\\", \\\"company\\\": \\\"company name\\\", \\\"website\\\": \\\"company website URL\\\", \\\"description\\\": \\\"2-3 line company summary including what they do and market position\\\"}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "81287638-9abb-4e1b-a8d8-f41db8013f7c",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "mtpBEP4Ed03ndqgn",
+          "name": "Anthropic API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.content[0].text;\nconst data = JSON.parse(raw);\nreturn [{ json: data }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "463960f4-b1cd-4c96-b940-dfd560959b57",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"firstname\": \"{{ $json.first_name }}\",\n    \"lastname\": \"{{ $json.last_name }}\",\n    \"email\": \"{{ $json.email }}\",\n    \"company\": \"{{ $json.company }}\",\n    \"website\": \"{{ $json.website }}\",\n    \"jobtitle\": \"CEO / Founder\",\n    \"message\": \"{{ $json.description }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "ab18c197-c957-43d5-b0bb-93ae3f66e1d2",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "7GKEF4aO8oaYpvKs",
+          "name": "Hubspot authorization"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "44093718-c430-483f-8294-d33938a3c9ea",
+  "meta": {
+    "instanceId": "e961890e437c1140bfa47b425a81f6f263d53c34c32d3775520b5b6ec215747a"
+  },
+  "id": "kgS7rDQ76ShoiOmW",
+  "tags": []
+}

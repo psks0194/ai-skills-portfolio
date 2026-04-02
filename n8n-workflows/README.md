@@ -6,3 +6,4 @@ Collection of AI-powered automation workflows built with n8n and Claude API.
 | Folder | Description |
 |--------|-------------|
 | company-research-agent | Chat-based company research using Claude API |
+| hubspot-lead-enrichment | AI-powered lead enrichment that creates contacts in HubSpot CRM |
