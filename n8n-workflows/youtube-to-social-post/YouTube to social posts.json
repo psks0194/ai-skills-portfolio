@@ -1,0 +1,478 @@
+{
+  "name": "YouTube to social posts",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "youtube-to-post",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d6aa40b1-cec0-4e79-99e7-c5945ea31976",
+      "name": "Webhook",
+      "webhookId": "c5934a4b-1db1-4361-a4c4-b37f28d1c10b"
+    },
+    {
+      "parameters": {
+        "jsCode": "const url = $input.first().json.body.youtube_url;\nconst videoId = url.match(/(?:v=|youtu\\.be\\/)([^&\\n?#]+)/)[1];                                               return [{ json: { videoId, youtube_url: url } }]; "
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "9b303fa6-2b6c-4ce5-a501-ac462b379a61",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "https://api.supadata.ai/v1/youtube/transcript",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "videoId",
+              "value": "={{ $json.videoId }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "sd_ffbd55955ac850219f52b2859ca73bb5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "bf09ec07-a3d4-4d3f-b60b-a630fc67a160",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "05f6c848-3757-437d-bed3-d8e41c225b58",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "mtpBEP4Ed03ndqgn",
+          "name": "Anthropic API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0023c8e0-f39c-49e3-adbe-7b0c4a1c4cbe",
+              "name": "=x_post",
+              "value": "=={{ $('ParseClaudeResponse').item.json.x_post }}",
+              "type": "string"
+            },
+            {
+              "id": "eea71a99-eeca-460c-9afb-152471f9852f",
+              "name": "linkedin_post",
+              "value": "=={{ $('ParseClaudeResponse').item.json.linkedin_post }}",
+              "type": "string"
+            },
+            {
+              "id": "ed2f1f12-bd07-486e-98e0-867c38922ade",
+              "name": "hashtags",
+              "value": "=={{ $('ParseClaudeResponse').item.json.hashtags }}",
+              "type": "string"
+            },
+            {
+              "id": "2a8224f9-a167-4d2f-b870-a1e5a1e09285",
+              "name": "media_id",
+              "value": "=={{ $('Upload Image to X').item.json.media_id_string }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1136,
+        -80
+      ],
+      "id": "b9a17345-3ec4-4edd-881a-335818ab279c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "const contentArray = $input.first().json.content;                                                                                                                                                                                        \n  const transcript = contentArray.map(item => item.text).join(' ');                                                                                                                                                                        \n  const youtubeUrl = $input.first().json.youtube_url;                                                                                                                                                                                      \n                                                                                                                                                                                                                                           \n  return [{                                                                                                                                                                                                                                \n    json: {                                                                                                                                                                                                                                \n      model: \"claude-opus-4-6\",                             \n      max_tokens: 1024,                                                                                                                                                                                                                    \n      messages: [                                           \n        {                                                                                                                                                                                                                                  \n          role: \"user\",                                     \n          content: \"Based on this YouTube transcript, generate social media posts. Return ONLY valid JSON with these keys: x_post, linkedin_post, image_prompt, hashtags.\\n\\nRules for x_post:\\n- Max 220 chars (leave room for the URL)\\n- Start with a surprising fact or contrarian take from the video\\n- Write like a human, not an AI\\n- No buzzwords like 'superpower', 'era of', 'game-changer'\\n- No em-dashes, no colons introducing lists\\n- Conversational tone\\n- End with a question to drive replies\\n- Append this URL at the end: \" + youtubeUrl + \"\\n\\nRules for linkedin_post:\\n- 3-5 bullet insights, professional but human tone\\n- Include the URL at the end\\n\\nRules for image_prompt:\\n- Detailed visual prompt for image generation\\n\\nRules for hashtags:\\n- Array of 5 relevant tags\\n\\nTranscript:\\n\" + transcript                                                                                                                     \n        }                                                                                                                                                                                                                                  \n      ]\n    }                                                                                                                                                                                                                                      \n  }];  "
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        368
+      ],
+      "id": "71787c65-483e-465c-a816-85305730c8ab",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.content[0].text;                                                                                                                                 \n  const cleaned = raw.replace(/^```json\\s*/i, '').replace(/```\\s*$/i, '').trim();                                                                                                  \n  const parsed = JSON.parse(cleaned);                                                                                                                                              \n  return [{ json: parsed }];                                                                                                                                                   "
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        288
+      ],
+      "id": "9222d7b5-3c19-42e7-a98b-d5294293e285",
+      "name": "ParseClaudeResponse"
+    },
+    {
+      "parameters": {
+        "url": "=https://image.pollinations.ai/prompt/{{ encodeURIComponent($json.image_prompt) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        848,
+        64
+      ],
+      "id": "dfb2c0f0-5dc3-48f8-8c20-f403ca0e4539",
+      "name": "PollinationImageGenerate"
+    },
+    {
+      "parameters": {
+        "text": "=={{ $('Bundle Outputs').item.json.x_post }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        176
+      ],
+      "id": "8e698bd0-37c7-479d-8803-8ed9add93244",
+      "name": "Create Tweet",
+      "credentials": {
+        "twitterOAuth2Api": {
+          "id": "oXMaOsaQpfplFzhO",
+          "name": "X account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1344,
+        112
+      ],
+      "id": "df27bc34-d4d5-44ad-95c9-126e47f4ea91",
+      "name": "Bundle Outputs"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://upload.twitter.com/1.1/media/upload.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "twitterOAuth2Api",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "media",
+              "value": "=={{ $('PollinationImageGenerate').item.binary.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        976,
+        272
+      ],
+      "id": "882b564b-e03c-43e3-b1a1-417b7576dfe9",
+      "name": "Upload Image to X",
+      "credentials": {
+        "twitterOAuth2Api": {
+          "id": "oXMaOsaQpfplFzhO",
+          "name": "X account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2128,
+        336
+      ],
+      "id": "f24713cd-b78d-4024-b1d2-d042c56aba22",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "person": "SY7-OYurt9",
+        "text": "=={{ $('Bundle Outputs').item.json.linkedin_post }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        1584,
+        -48
+      ],
+      "id": "8e1fc843-c0cb-453e-8570-220377297ec0",
+      "name": "Create a post",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "dhaicHEqwLwLY6xd",
+          "name": "LinkedIn account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1808,
+        64
+      ],
+      "id": "4c466b86-d966-44cd-a4b1-690bde9b9ea0",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "ParseClaudeResponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Bundle Outputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParseClaudeResponse": {
+      "main": [
+        [
+          {
+            "node": "PollinationImageGenerate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PollinationImageGenerate": {
+      "main": [
+        [
+          {
+            "node": "Upload Image to X",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bundle Outputs": {
+      "main": [
+        [
+          {
+            "node": "Create Tweet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Tweet": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Upload Image to X": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Create a post": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9e593ba6-9f3b-423b-8a99-fab74876fee1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e961890e437c1140bfa47b425a81f6f263d53c34c32d3775520b5b6ec215747a"
+  },
+  "id": "pw2kCpq41HXnnoj2",
+  "tags": []
+}
