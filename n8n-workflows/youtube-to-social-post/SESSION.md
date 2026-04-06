@@ -6,32 +6,47 @@
 - Built full n8n workflow end-to-end
 - Successfully posting to both X and LinkedIn automatically
 - Phase 1 complete
+- Brand voice prompt updated (Indian tone, simple language, general audience)
+- LinkedIn image upload working (register upload → send binary → get asset URN)
 
 ## Final Node Order
 1. Webhook
-2. Extract Video ID
-3. Fetch Transcript
-4. Build Claude Request
-5. Claude API
-6. Parse Claude Response
-7. Generate Image (Pollinations)
-8. Upload Image to X (skipped on error — OAuth1 issue)
-9. Bundle Outputs
-10. Create Tweet (X)
-11. Post to LinkedIn (parallel with Create Tweet)
-12. Merge (waits for both X and LinkedIn)
-13. Respond to Webhook
+2. extract_video_meta (Extract Video ID)
+3. HTTP Request (Fetch Transcript — Supadata)
+4. Code in JavaScript2 (Build Claude Request)
+5. HTTP Request1 (Claude API)
+6. ParseClaudeResponse
+7. PollinationImageGenerate
+8. Upload Image to X (fails silently — OAuth1 issue)
+9. Edit Fields (Bundle Outputs — Set node)
+10. Bundle Outputs (Respond to Webhook — used as pass-through)
+11. upload_image_to_linkedin (Register Upload)
+12. Merge1 (combines Pollinations binary + upload URL)
+13. Code in JavaScript (extracts uploadUrl + binary)
+14. send_image_to_linkdin (PUT binary to LinkedIn)
+15. Create Tweet (X posting)
+16. Create a post (LinkedIn posting)
+17. Merge (combines X + LinkedIn outputs)
+18. Respond to Webhook
+
+## Where we left off
+- LinkedIn image upload is working (send_image_to_linkdin returns `{}` = success)
+- Next step: wire up **Create a post** (LinkedIn node) to include the image asset URN
+  - Add Additional Fields → Media Category = IMAGE
+  - Media URL or URN = `={{ $('upload_image_to_linkedin').first().json.value.asset }}`
 
 ## Key fixes learned
 - n8n Raw body field uses `{{ }}` not `={{ }}` (no = prefix)
 - Set node expressions need `={{ }}` with expression toggle ON
+- URL field in HTTP Request: use expression toggle ON + no `={{ }}` wrapper
 - Supadata content is an array — must map/join before passing to Claude
 - Claude returns markdown-wrapped JSON — must strip ```json``` before parsing
 - X media upload requires OAuth 1.0a — not supported with OAuth 2.0
 - n8n must be started with N8N_EDITOR_BASE_URL=ngrok URL for OAuth2 to work
 - LinkedIn: turn OFF "Organizational support" and "Legacy" toggles in credential
 - LinkedIn requires "Sign In with LinkedIn using OpenID Connect" product for openid scope
-- Use Merge node (Append mode) to run X and LinkedIn posting in parallel
+- LinkedIn image upload returns empty `{}` on success (201 response)
+- Use `.first()` not `.item` in Code nodes
 
 ## Docker start command (required for X and LinkedIn OAuth2)
 ```bash
@@ -41,11 +56,11 @@ Note: ngrok URL changes on restart — update both docker command and X Develope
 
 ## Pending items
 - Rotate Anthropic API key (was exposed in httpbin debug output)
-- Refine Claude prompt for better post quality
+- Wire up Create a post (LinkedIn) to include image asset URN
+- Fix Merge node — not connected to Respond to Webhook
 - Image posting to X (requires OAuth 1.0a — deferred)
 
-## Next steps (Phase 2)
-1. Rotate Anthropic API key
-2. Add Slack approval step before posting
-3. Add brand voice to Claude prompt
-4. Add duplicate checker (Google Sheets)
+## Next steps (tomorrow)
+1. Connect Create a post LinkedIn node with image asset URN
+2. Test full pipeline with image on LinkedIn
+3. Move to Phase 2 — Slack approval step
