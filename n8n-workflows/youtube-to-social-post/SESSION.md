@@ -1,13 +1,12 @@
 # Session Notes — YouTube to Social Post
 
-## Last updated: 2026-04-06
+## Last updated: 2026-04-08
 
 ## What was accomplished
-- Built full n8n workflow end-to-end
-- Successfully posting to both X and LinkedIn automatically
-- Phase 1 complete
-- Brand voice prompt updated (Indian tone, simple language, general audience)
-- LinkedIn image upload working (register upload → send binary → get asset URN)
+- Phase 1 fully complete and smoke tested
+- LinkedIn image post working via UGC Posts API (HTTP Request node)
+- Tweet posting working
+- Full pipeline tested end-to-end: YouTube URL → transcript → Claude → image → X + LinkedIn
 
 ## Final Node Order
 1. Webhook
@@ -17,50 +16,39 @@
 5. HTTP Request1 (Claude API)
 6. ParseClaudeResponse
 7. PollinationImageGenerate
-8. Upload Image to X (fails silently — OAuth1 issue)
+8. Upload Image to X (fails silently — OAuth1 issue, deferred)
 9. Edit Fields (Bundle Outputs — Set node)
 10. Bundle Outputs (Respond to Webhook — used as pass-through)
-11. upload_image_to_linkedin (Register Upload)
-12. Merge1 (combines Pollinations binary + upload URL)
-13. Code in JavaScript (extracts uploadUrl + binary)
-14. send_image_to_linkdin (PUT binary to LinkedIn)
-15. Create Tweet (X posting)
-16. Create a post (LinkedIn posting)
-17. Merge (combines X + LinkedIn outputs)
-18. Respond to Webhook
+11. Create Tweet → Merge → Respond to Webhook
+12. upload_image_to_linkedin (Register Upload)
+13. Merge1 (combines Pollinations binary + upload URL)
+14. Code in JavaScript (extracts uploadUrl + binary)
+15. send_image_to_linkdin (PUT binary to LinkedIn)
+16. Build LinkedIn Body (Code node — builds UGC post object)
+17. HTTP Request2 (POST to /v2/ugcPosts — LinkedIn post with image)
+18. Merge → Respond to Webhook
+
+## Key fix from this session
+- HTTP Request2 body: use `={{ $json }}` NOT `={{ JSON.stringify($json) }}`
+- When rawContentType is application/json, n8n serializes the object automatically
+- Using JSON.stringify causes double-encoding — body gets sent as a JSON string instead of a JSON object
 
 ## Where we left off
-- LinkedIn image upload is working (send_image_to_linkdin returns `{}` = success)
-- Next step: wire up **Create a post** (LinkedIn node) to include the image asset URN
-  - Add Additional Fields → Media Category = IMAGE
-  - Media URL or URN = `={{ $('upload_image_to_linkedin').first().json.value.asset }}`
+- Phase 1 complete
+- Ready to start Phase 2: Slack approval step before auto-posting
 
-## Key fixes learned
-- n8n Raw body field uses `{{ }}` not `={{ }}` (no = prefix)
-- Set node expressions need `={{ }}` with expression toggle ON
-- URL field in HTTP Request: use expression toggle ON + no `={{ }}` wrapper
-- Supadata content is an array — must map/join before passing to Claude
-- Claude returns markdown-wrapped JSON — must strip ```json``` before parsing
-- X media upload requires OAuth 1.0a — not supported with OAuth 2.0
-- n8n must be started with N8N_EDITOR_BASE_URL=ngrok URL for OAuth2 to work
-- LinkedIn: turn OFF "Organizational support" and "Legacy" toggles in credential
-- LinkedIn requires "Sign In with LinkedIn using OpenID Connect" product for openid scope
-- LinkedIn image upload returns empty `{}` on success (201 response)
-- Use `.first()` not `.item` in Code nodes
+## Pending items
+- Rotate Anthropic API key (was exposed in httpbin debug output — visible in this session too, rotate ASAP)
+- Rotate LinkedIn Bearer token (was exposed in httpbin debug output this session)
+- X image posting (requires OAuth 1.0a — deferred to later phase)
 
 ## Docker start command (required for X and LinkedIn OAuth2)
 ```bash
 docker run -it --rm -p 5678:5678 -e N8N_EDITOR_BASE_URL=https://refusable-beneficially-gemma.ngrok-free.dev -e WEBHOOK_URL=https://refusable-beneficially-gemma.ngrok-free.dev -v n8n-docker_n8n_data:/home/node/.n8n n8nio/n8n
 ```
-Note: ngrok URL changes on restart — update both docker command and X Developer Portal when it does.
+ngrok static domain — does not change on restart.
 
-## Pending items
-- Rotate Anthropic API key (was exposed in httpbin debug output)
-- Wire up Create a post (LinkedIn) to include image asset URN
-- Fix Merge node — not connected to Respond to Webhook
-- Image posting to X (requires OAuth 1.0a — deferred)
-
-## Next steps (tomorrow)
-1. Connect Create a post LinkedIn node with image asset URN
-2. Test full pipeline with image on LinkedIn
-3. Move to Phase 2 — Slack approval step
+## Next steps (Phase 2)
+1. Add Slack approval step — workflow pauses, sends preview to Slack, waits for approve/reject
+2. On approve → post to X and LinkedIn
+3. On reject → discard or allow editing

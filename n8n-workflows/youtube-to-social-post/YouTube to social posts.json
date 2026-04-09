@@ -11,25 +11,12 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        0,
-        0
+        -416,
+        320
       ],
       "id": "d6aa40b1-cec0-4e79-99e7-c5945ea31976",
       "name": "Webhook",
       "webhookId": "c5934a4b-1db1-4361-a4c4-b37f28d1c10b"
-    },
-    {
-      "parameters": {
-        "jsCode": "const url = $input.first().json.body.youtube_url;\nconst videoId = url.match(/(?:v=|youtu\\.be\\/)([^&\\n?#]+)/)[1];                                               return [{ json: { videoId, youtube_url: url } }]; "
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        208,
-        0
-      ],
-      "id": "9b303fa6-2b6c-4ce5-a501-ac462b379a61",
-      "name": "Code in JavaScript"
     },
     {
       "parameters": {
@@ -57,8 +44,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        416,
-        0
+        32,
+        320
       ],
       "id": "bf09ec07-a3d4-4d3f-b60b-a630fc67a160",
       "name": "HTTP Request"
@@ -91,8 +78,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        624,
-        0
+        480,
+        160
       ],
       "id": "05f6c848-3757-437d-bed3-d8e41c225b58",
       "name": "HTTP Request1",
@@ -110,25 +97,25 @@
             {
               "id": "0023c8e0-f39c-49e3-adbe-7b0c4a1c4cbe",
               "name": "=x_post",
-              "value": "=={{ $('ParseClaudeResponse').item.json.x_post }}",
+              "value": "={{ $('ParseClaudeResponse').item.json.x_post }}",
               "type": "string"
             },
             {
               "id": "eea71a99-eeca-460c-9afb-152471f9852f",
               "name": "linkedin_post",
-              "value": "=={{ $('ParseClaudeResponse').item.json.linkedin_post }}",
+              "value": "={{ $('ParseClaudeResponse').item.json.linkedin_post }}",
               "type": "string"
             },
             {
               "id": "ed2f1f12-bd07-486e-98e0-867c38922ade",
               "name": "hashtags",
-              "value": "=={{ $('ParseClaudeResponse').item.json.hashtags }}",
+              "value": "={{ $('ParseClaudeResponse').item.json.hashtags }}",
               "type": "string"
             },
             {
               "id": "2a8224f9-a167-4d2f-b870-a1e5a1e09285",
               "name": "media_id",
-              "value": "=={{ $('Upload Image to X').item.json.media_id_string }}",
+              "value": "={{ $('Upload Image to X').item.json.media_id_string }}",
               "type": "string"
             }
           ]
@@ -138,21 +125,21 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1136,
-        -80
+        1152,
+        160
       ],
       "id": "b9a17345-3ec4-4edd-881a-335818ab279c",
       "name": "Edit Fields"
     },
     {
       "parameters": {
-        "jsCode": "const contentArray = $input.first().json.content;                                                                                                                                                                                        \n  const transcript = contentArray.map(item => item.text).join(' ');                                                                                                                                                                        \n  const youtubeUrl = $input.first().json.youtube_url;                                                                                                                                                                                      \n                                                                                                                                                                                                                                           \n  return [{                                                                                                                                                                                                                                \n    json: {                                                                                                                                                                                                                                \n      model: \"claude-opus-4-6\",                             \n      max_tokens: 1024,                                                                                                                                                                                                                    \n      messages: [                                           \n        {                                                                                                                                                                                                                                  \n          role: \"user\",                                     \n          content: \"Based on this YouTube transcript, generate social media posts. Return ONLY valid JSON with these keys: x_post, linkedin_post, image_prompt, hashtags.\\n\\nRules for x_post:\\n- Max 220 chars (leave room for the URL)\\n- Start with a surprising fact or contrarian take from the video\\n- Write like a human, not an AI\\n- No buzzwords like 'superpower', 'era of', 'game-changer'\\n- No em-dashes, no colons introducing lists\\n- Conversational tone\\n- End with a question to drive replies\\n- Append this URL at the end: \" + youtubeUrl + \"\\n\\nRules for linkedin_post:\\n- 3-5 bullet insights, professional but human tone\\n- Include the URL at the end\\n\\nRules for image_prompt:\\n- Detailed visual prompt for image generation\\n\\nRules for hashtags:\\n- Array of 5 relevant tags\\n\\nTranscript:\\n\" + transcript                                                                                                                     \n        }                                                                                                                                                                                                                                  \n      ]\n    }                                                                                                                                                                                                                                      \n  }];  "
+        "jsCode": "const contentArray = $input.first().json.content;\n\nconst transcript = contentArray.map(item => item.text).join(' ');\nconst youtubeUrl = $('extract_video_meta').first().json.youtube_url;\n\nreturn [{\n\njson: {\n\nmodel: \"claude-opus-4-6\",\n\nmax_tokens: 1024,\n\nmessages: [\n{\nrole: \"user\",\ncontent: `Based on this YouTube transcript, generate social media posts. Return ONLY valid JSON with these keys: x_post, linkedin_post, image_prompt, hashtags.\n\nABOUT THE AUTHOR:\n\n- 10+ years experience in tech, currently learning and exploring AI tools\n- Indian, writes in simple conversational English (like how Indians talk in day-to-day life)\n- Not a hardcore AI expert — more like a curious senior person sharing what they are discovering\n- Audience: developers, founders, product managers, AI enthusiasts, and general public who are new to AI\n- Goal: make AI concepts feel simple and approachable, not intimidating\n\nTONE RULES (very important):\n\n- Write like you are explaining to a friend over chai — warm, simple, relatable\n- Use simple words, avoid jargon. If you must use a technical term, explain it in plain words\n- It is okay to say things like \"yaar\", \"basically\", \"simply put\", \"the thing is\"\n- Share it as a personal learning — \"I came across this\", \"this got me thinking\", \"honestly this surprised me\"\n- No corporate speak. No \"game-changer\", \"revolutionary\", \"leverage\", \"superpower\"\n- Sound like a real human, not a LinkedIn influencer\n\nRULES FOR x_post:\n\n- Max 220 chars (leave room for URL and hashtags)\n- One surprising insight from the video, explained simply\n- End with a genuine question to spark conversation\n- Then on a new line add the hashtags\n- Then on a new line append this URL: ${youtubeUrl}\n\nRULES FOR linkedin_post:\n\n- 3-5 short bullet points, each explaining one insight in plain simple language\n- Start with a relatable hook — something everyone can connect with\n- End with a question or call to action\n- Then add hashtags on a new line\n- Include the URL at the end: ${youtubeUrl}\n\nRULES FOR image_prompt:\n\n- Very detailed visual prompt for image generation\n- Describe the scene, style, colors, mood, lighting, composition\n- Mention specific visual elements related to the video topic\n- Example style: \"A detailed digital illustration of [topic], showing [specific elements], in [art style] style, with [color palette], [lighting description], [mood],\nprofessional quality, 4K\"\n- Make it specific to THIS video's content, not generic\n\nRULES FOR hashtags:\n\n- Array of 5 relevant tags, mix of popular and niche\n\nTranscript:\n\n${transcript}`\n\n}\n\n]\n\n}\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        400,
-        368
+        240,
+        320
       ],
       "id": "71787c65-483e-465c-a816-85305730c8ab",
       "name": "Code in JavaScript2"
@@ -165,7 +152,7 @@
       "typeVersion": 2,
       "position": [
         704,
-        288
+        64
       ],
       "id": "9222d7b5-3c19-42e7-a98b-d5294293e285",
       "name": "ParseClaudeResponse"
@@ -184,7 +171,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        848,
+        896,
         64
       ],
       "id": "dfb2c0f0-5dc3-48f8-8c20-f403ca0e4539",
@@ -192,14 +179,14 @@
     },
     {
       "parameters": {
-        "text": "=={{ $('Bundle Outputs').item.json.x_post }}",
+        "text": "={{ $('Bundle Outputs').item.json.x_post }}",
         "additionalFields": {}
       },
       "type": "n8n-nodes-base.twitter",
       "typeVersion": 2,
       "position": [
-        1584,
-        176
+        1728,
+        160
       ],
       "id": "8e698bd0-37c7-479d-8803-8ed9add93244",
       "name": "Create Tweet",
@@ -220,7 +207,7 @@
       "typeVersion": 1.5,
       "position": [
         1344,
-        112
+        48
       ],
       "id": "df27bc34-d4d5-44ad-95c9-126e47f4ea91",
       "name": "Bundle Outputs"
@@ -268,26 +255,64 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2128,
-        336
+        3040,
+        -80
       ],
       "id": "f24713cd-b78d-4024-b1d2-d042c56aba22",
       "name": "Respond to Webhook"
     },
     {
-      "parameters": {
-        "person": "SY7-OYurt9",
-        "text": "=={{ $('Bundle Outputs').item.json.linkedin_post }}",
-        "additionalFields": {}
-      },
-      "type": "n8n-nodes-base.linkedIn",
-      "typeVersion": 1,
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
       "position": [
-        1584,
-        -48
+        2752,
+        -160
       ],
-      "id": "8e1fc843-c0cb-453e-8570-220377297ec0",
-      "name": "Create a post",
+      "id": "4c466b86-d966-44cd-a4b1-690bde9b9ea0",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const url = $input.first().json.body.youtube_url;\nconst videoId = url.match(/(?:v=|youtu\\.be\\/)([^&\\n?#]+)/)[1];                                               return [{ json: { videoId, youtube_url: url } }]; "
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        320
+      ],
+      "id": "9b303fa6-2b6c-4ce5-a501-ac462b379a61",
+      "name": "extract_video_meta"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.uploadUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": " media-type-family",
+              "value": "STILLIMAGE"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "=data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2096,
+        -416
+      ],
+      "id": "53163115-c39c-4d62-8a75-d5096931cbbe",
+      "name": "send_image_to_linkdin",
       "credentials": {
         "linkedInOAuth2Api": {
           "id": "dhaicHEqwLwLY6xd",
@@ -300,11 +325,154 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        1808,
-        64
+        1744,
+        -352
       ],
-      "id": "4c466b86-d966-44cd-a4b1-690bde9b9ea0",
-      "name": "Merge"
+      "id": "2e611bec-c642-496e-adb1-5ed6fbaec35b",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const uploadUrl = $('upload_image_to_linkedin').first().json.value.uploadMechanism['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'].uploadUrl;                                                         \n                                                                                                                                                                                                                      \n  return [{                                                                                                                                                                                                           \n    json: { uploadUrl },                                                                                                                                                                                              \n    binary: $('PollinationImageGenerate').first().binary    \n  }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1904,
+        -416
+      ],
+      "id": "c0376538-1717-4b26-ad68-5852cb3636f6",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/v2/assets?action=registerUpload",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({                                                                                                                                                                   \"registerUploadRequest\": {                                     \"recipes\": [\"urn:li:digitalmediaRecipe:feedshare-image\"],       \"owner\": \"urn:li:person:SY7-OYurt9\",                            \"serviceRelationships\": [{                                                                                                                                                            \"relationshipType\": \"OWNER\",         \"identifier\": \"urn:li:userGeneratedContent\"                                                                                                                                       }]                                                         }                                                                                                                                                                                 }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1584,
+        -160
+      ],
+      "id": "1462e1b1-bba4-46cf-a21b-b7ba823b4687",
+      "name": "upload_image_to_linkedin",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "dhaicHEqwLwLY6xd",
+          "name": "LinkedIn account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/v2/ugcPosts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2448,
+        -240
+      ],
+      "id": "956a1d6f-d510-4315-b30f-dd3da547cd8b",
+      "name": "HTTP Request2",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "dhaicHEqwLwLY6xd",
+          "name": "LinkedIn account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const linkedinPost = $('Bundle Outputs').first().json.linkedin_post;\n  const assetUrn = $('upload_image_to_linkedin').first().json.value.asset;\n                                                                                                                                                                  \n  return [{\n    json: {                                                                                                                                                       \n      author: \"urn:li:person:SY7-OYurt9\",\n      lifecycleState: \"PUBLISHED\",\n      specificContent: {\n        \"com.linkedin.ugc.ShareContent\": {\n          shareCommentary: { text: linkedinPost },                                                                                                                \n          shareMediaCategory: \"IMAGE\",\n          media: [{ status: \"READY\", media: assetUrn }]                                                                                                           \n        }                                                                                                                                                         \n      },\n      visibility: {                                                                                                                                               \n        \"com.linkedin.ugc.MemberNetworkVisibility\": \"PUBLIC\"\n      }\n    }\n  }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2288,
+        -416
+      ],
+      "id": "db970601-b693-452a-b899-6b10ef02410f",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "article-to-post",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -416,
+        160
+      ],
+      "id": "035cadb5-3b0f-4983-aadc-7e18945cef24",
+      "name": "Webhook-article",
+      "webhookId": "2a7ffd47-adbc-44b1-ba1c-52f41cfe358f"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://r.jina.ai/{{$json.body.article_url}}  ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -176,
+        160
+      ],
+      "id": "ac1c9917-94e8-4cfb-a498-2becc8199064",
+      "name": "Fetch_Article_Content"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;                                                                                                                           \n  // Jina returns plain text — handle different response shapes                                                                                                 \n  const articleText = typeof response === 'string' ? response                                                                                                     \n    : response.data || response.body || response.content || JSON.stringify(response);\n                                                                                                                                                                  \n  const articleUrl = $('Webhook-article').first().json.body.article_url;                                                                                      \n                                                                                                                                                                  \n  return [{                                                                                                                                                     \n    json: {\n      model: \"claude-opus-4-6\",\n      max_tokens: 1024,\n      messages: [                                                                                                                                                 \n        {\n          role: \"user\",                                                                                                                                           \n          content: `Based on this article, generate social media posts. Return ONLY valid JSON with these keys: x_post, linkedin_post, image_prompt, hashtags.  \n                                                                                                                                                                  \n  ABOUT THE AUTHOR:\n                                                                                                                                                                  \n  - 10+ years experience in tech, currently learning and exploring AI tools                                                                                     \n  - Indian, writes in simple conversational English (like how Indians talk in day-to-day life)\n  - Not a hardcore AI expert — more like a curious senior person sharing what they are discovering                                                                \n  - Audience: developers, founders, product managers, AI enthusiasts, and general public who are new to AI\n  - Goal: make AI concepts feel simple and approachable, not intimidating                                                                                         \n                                                                                                                                                                  \n  TONE RULES (very important):\n                                                                                                                                                                  \n  - Write like you are explaining to a friend over chai — warm, simple, relatable                                                                               \n  - Use simple words, avoid jargon. If you must use a technical term, explain it in plain words\n  - It is okay to say things like \"yaar\", \"basically\", \"simply put\", \"the thing is\"                                                                               \n  - Share it as a personal learning — \"I came across this\", \"this got me thinking\", \"honestly this surprised me\"\n  - No corporate speak. No \"game-changer\", \"revolutionary\", \"leverage\", \"superpower\"                                                                              \n  - Sound like a real human, not a LinkedIn influencer                                                                                                          \n                                                                                                                                                                  \n  RULES FOR x_post:                                                                                                                                             \n\n  - Max 220 chars (leave room for URL and hashtags)                                                                                                               \n  - One surprising insight from the article, explained simply\n  - End with a genuine question to spark conversation                                                                                                             \n  - Then on a new line add the hashtags                                                                                                                         \n  - Then on a new line append this URL: ${articleUrl}\n\n  RULES FOR linkedin_post:                                                                                                                                        \n   \n  - 3-5 short bullet points, each explaining one insight in plain simple language                                                                                 \n  - Start with a relatable hook — something everyone can connect with                                                                                           \n  - End with a question or call to action\n  - Then add hashtags on a new line\n  - Include the URL at the end: ${articleUrl}                                                                                                                     \n   \n  RULES FOR image_prompt:                                                                                                                                         \n                                                                                                                                                                \n  - Very detailed visual prompt for image generation\n  - Describe the scene, style, colors, mood, lighting, composition\n  - Mention specific visual elements related to the article topic\n  - Example style: \"A detailed digital illustration of [topic], showing [specific elements], in [art style] style, with [color palette], [lighting description],  \n  [mood], professional quality, 4K\"\n  - Make it specific to THIS article's content, not generic                                                                                                       \n                                                                                                                                                                  \n  RULES FOR hashtags:\n                                                                                                                                                                  \n  - Array of 5 relevant tags, mix of popular and niche\n\n  Article Content:\n\n  ${articleText}`\n        }\n      ]\n    }\n  }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        160
+      ],
+      "id": "0989bbd1-fef1-40de-881e-f50b6a91504f",
+      "name": "Code in JavaScript3"
     }
   ],
   "pinData": {},
@@ -313,18 +481,7 @@
       "main": [
         [
           {
-            "node": "Code in JavaScript",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code in JavaScript": {
-      "main": [
-        [
-          {
-            "node": "HTTP Request",
+            "node": "extract_video_meta",
             "type": "main",
             "index": 0
           }
@@ -393,6 +550,11 @@
             "node": "Upload Image to X",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -401,12 +563,12 @@
       "main": [
         [
           {
-            "node": "Create Tweet",
+            "node": "upload_image_to_linkedin",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Create a post",
+            "node": "Create Tweet",
             "type": "main",
             "index": 0
           }
@@ -440,7 +602,73 @@
         []
       ]
     },
-    "Create a post": {
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract_video_meta": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_image_to_linkdin": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "send_image_to_linkdin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload_image_to_linkedin": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
       "main": [
         [
           {
@@ -451,11 +679,44 @@
         ]
       ]
     },
-    "Merge": {
+    "Code in JavaScript1": {
       "main": [
         [
           {
-            "node": "Respond to Webhook",
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook-article": {
+      "main": [
+        [
+          {
+            "node": "Fetch_Article_Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch_Article_Content": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
             "type": "main",
             "index": 0
           }
@@ -468,7 +729,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "9e593ba6-9f3b-423b-8a99-fab74876fee1",
+  "versionId": "17e1cfe4-d60a-4811-bf82-6f2dedfa2aaf",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "e961890e437c1140bfa47b425a81f6f263d53c34c32d3775520b5b6ec215747a"
