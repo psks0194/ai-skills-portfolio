@@ -473,6 +473,137 @@
       ],
       "id": "0989bbd1-fef1-40de-881e-f50b6a91504f",
       "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resumeUrl = $execution.resumeUrl;                                                                                                                         \n  const x_post = $('ParseClaudeResponse').first().json.x_post;\n  const linkedin_post = $('ParseClaudeResponse').first().json.linkedin_post;                                                                                      \n  const hashtags = $('ParseClaudeResponse').first().json.hashtags;\n                                                                                                                                                                  \n  const approveUrl = `${resumeUrl}&action=approve`;                                                                                                               \n  const rejectUrl = `${resumeUrl}&action=reject`;\n                                                                                                                                                                  \n  return [{       \n    json: {\n      unfurl_links: false,                                   \n      unfurl_media: false,\n      channel: \"#all-n8n-post-approver\",\n      blocks: [                                                                                                                                                   \n        {\n          type: \"section\",                                                                                                                                        \n          text: { type: \"mrkdwn\", text: \"📝 *New Social Post Ready for Review*\" }\n        },                                                                                                                                                        \n        {\n          type: \"section\",                                                                                                                                        \n          text: { type: \"mrkdwn\", text: `*X Post:*\\n${x_post}` }\n        },\n        {\n          type: \"section\",\n          text: { type: \"mrkdwn\", text: `*LinkedIn Post:*\\n${linkedin_post}` }                                                                                    \n        },\n        {                                                                                                                                                         \n          type: \"section\",\n          text: {\n            type: \"mrkdwn\",                                                                                                                                       \n            text: `*Hashtags:* ${Array.isArray(hashtags) ? hashtags.join(', ') : hashtags}`\n          }                                                                                                                                                       \n        },        \n        {\n          type: \"section\",\n          text: {                                                                                                                                                 \n            type: \"mrkdwn\",\n            text: `<${approveUrl}|✅ Approve & Post>   <${rejectUrl}|❌ Reject>`                                                                                  \n          }                                                                                                                                                       \n        }\n      ]                                                                                                                                                           \n    }             \n  }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        -800
+      ],
+      "id": "fc8d1bba-6a80-4111-bfe5-7bafa85fa822",
+      "name": "Build Slack Approval Message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        848,
+        -624
+      ],
+      "id": "30b57aa2-0983-4d61-8e02-2c8389e5d260",
+      "name": "Send to Slack",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "P4hJCsmbHbBG1YQN",
+          "name": "Slack Bot Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        -416
+      ],
+      "id": "92280d19-c810-4ffe-8f9e-a4eab72a9cec",
+      "name": "Wait for Approval",
+      "webhookId": "8f2ad153-fa1c-44f6-8402-c10b6c2d79e1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bc3302bf-3b46-4b37-9fe4-2b8a2c1f85d5",
+              "leftValue": "={{ $json.query?.action }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        848,
+        -192
+      ],
+      "id": "0bca5d3e-77d8-4b59-83ce-96b9add56d24",
+      "name": "Check Approval"
+    },
+    {
+      "parameters": {
+        "url": "https://slack.com/api/chat.postMessage",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{                                      \n    \"channel\": \"#all-n8n-post-approver\",\n    \"text\": \"❌ Post was rejected and discarded.\"\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1104,
+        -176
+      ],
+      "id": "7d3343c2-8475-400a-afb3-ac99485edad2",
+      "name": "Notify Rejected",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "P4hJCsmbHbBG1YQN",
+          "name": "Slack Bot Token"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -536,7 +667,7 @@
       "main": [
         [
           {
-            "node": "PollinationImageGenerate",
+            "node": "Build Slack Approval Message",
             "type": "main",
             "index": 0
           }
@@ -722,6 +853,57 @@
           }
         ]
       ]
+    },
+    "Build Slack Approval Message": {
+      "main": [
+        [
+          {
+            "node": "Send to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Slack": {
+      "main": [
+        [
+          {
+            "node": "Wait for Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Approval": {
+      "main": [
+        [
+          {
+            "node": "Check Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Approval": {
+      "main": [
+        [
+          {
+            "node": "PollinationImageGenerate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -729,7 +911,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "17e1cfe4-d60a-4811-bf82-6f2dedfa2aaf",
+  "versionId": "791f3de5-04de-4f20-8636-a8cf58b031f8",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "e961890e437c1140bfa47b425a81f6f263d53c34c32d3775520b5b6ec215747a"

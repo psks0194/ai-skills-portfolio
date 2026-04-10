@@ -6,21 +6,20 @@ Automated pipeline: YouTube URL → Claude-generated post + image → auto-post 
 ---
 
 ## Phase 1: Core Pipeline (Get it working end-to-end)
-- [ ] Webhook trigger in n8n (accepts YouTube URL)
-- [ ] Fetch video title, description via YouTube Data API v3
-- [ ] Extract transcript via Supadata API or youtube-transcript API
-- [ ] Call Claude API — returns X post, LinkedIn post, image prompt, hashtags as JSON
-- [ ] Generate image via DALL-E 3 API
-- [ ] Post to X (Twitter API v2 — upload image → post tweet)
-- [ ] Post to LinkedIn (ugcPosts endpoint)
-- [ ] Send Slack/email notification with post links
+- [x] Webhook trigger in n8n (accepts YouTube URL)
+- [x] Extract transcript via Supadata API
+- [x] Call Claude API — returns X post, LinkedIn post, image prompt, hashtags as JSON
+- [x] Generate image via Pollinations.ai (free, no API key)
+- [x] Post to X (Twitter API v2)
+- [x] Post to LinkedIn (ugcPosts endpoint with image)
+- [x] Second webhook trigger (accepts article/website URL via Jina AI Reader)
 
 ---
 
 ## Phase 2: Make it Smarter
-- [ ] Slack approval step — Approve / Regenerate buttons before posting
-- [ ] Brand voice — system prompt with your tone and preferred phrases
-- [ ] Duplicate checker — skip if same topic posted in last 30 days (store in Google Sheets / Airtable)
+- [x] Slack approval step — workflow pauses, sends preview to Slack, Approve/Reject links
+- [ ] Duplicate checker — skip if same topic posted in last 30 days (Google Sheets / Airtable)
+- [ ] Brand voice — refine system prompt with tone and preferred phrases
 
 ---
 

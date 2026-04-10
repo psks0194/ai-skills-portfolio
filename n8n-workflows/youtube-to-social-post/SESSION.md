@@ -1,54 +1,65 @@
 # Session Notes — YouTube to Social Post
 
-## Last updated: 2026-04-08
+## Last updated: 2026-04-10
 
 ## What was accomplished
-- Phase 1 fully complete and smoke tested
+
+### Phase 1 (complete)
+- Full pipeline working end-to-end: YouTube URL → transcript → Claude → image → X + LinkedIn
 - LinkedIn image post working via UGC Posts API (HTTP Request node)
 - Tweet posting working
-- Full pipeline tested end-to-end: YouTube URL → transcript → Claude → image → X + LinkedIn
 
-## Final Node Order
-1. Webhook
-2. extract_video_meta (Extract Video ID)
-3. HTTP Request (Fetch Transcript — Supadata)
-4. Code in JavaScript2 (Build Claude Request)
+### Phase 2 — Session 2026-04-09 to 2026-04-10
+- Added second webhook trigger: `POST /article-to-post`
+  - Accepts any website/article URL
+  - Fetches clean content via Jina AI Reader (`https://r.jina.ai/{url}`) — free, no API key
+  - Same Claude → image → X + LinkedIn pipeline as YouTube flow
+- Added Slack approval step (Phase 2, item 1 — complete)
+  - After Claude generates posts, workflow sends preview to `#all-n8n-post-approver`
+  - Message includes Approve and Reject links using `$execution.resumeUrl`
+  - Wait node pauses execution until link is clicked
+  - IF node routes: approve → post to X + LinkedIn, reject → notify Slack + stop
+  - Fixed: `unfurl_links: false` added to prevent Slack auto-fetching links
+  - Fixed: `&action=approve` (not `?action=approve`) since resumeUrl already has `?signature=...`
+  - Slack bot token stored as n8n Header Auth credential (not hardcoded)
+
+## Final Node Order (updated)
+1. Webhook (`/youtube-to-post`) OR Webhook - Article (`/article-to-post`)
+2. extract_video_meta / Fetch Article Content (Jina AI)
+3. HTTP Request — Supadata transcript / Code_Article_Claude
+4. Code in JavaScript2 / Code_Article_Claude (Build Claude Request)
 5. HTTP Request1 (Claude API)
 6. ParseClaudeResponse
-7. PollinationImageGenerate
-8. Upload Image to X (fails silently — OAuth1 issue, deferred)
-9. Edit Fields (Bundle Outputs — Set node)
-10. Bundle Outputs (Respond to Webhook — used as pass-through)
-11. Create Tweet → Merge → Respond to Webhook
-12. upload_image_to_linkedin (Register Upload)
-13. Merge1 (combines Pollinations binary + upload URL)
-14. Code in JavaScript (extracts uploadUrl + binary)
-15. send_image_to_linkdin (PUT binary to LinkedIn)
-16. Build LinkedIn Body (Code node — builds UGC post object)
-17. HTTP Request2 (POST to /v2/ugcPosts — LinkedIn post with image)
-18. Merge → Respond to Webhook
+7. **Build Slack Approval Message** (Code node — new)
+8. **Send to Slack** (HTTP Request — new)
+9. **Wait for Approval** (Wait node — new)
+10. **Check Approval** (IF node — new)
+11. PollinationImageGenerate (only if approved)
+12. Upload Image to X
+13. Edit Fields → Bundle Outputs
+14. Create Tweet → Merge → Respond to Webhook
+15. upload_image_to_linkedin → Merge1 → Code in JavaScript
+16. send_image_to_linkdin → Code in JavaScript1 → HTTP Request2 (LinkedIn UGC post)
+17. Merge → Respond to Webhook
 
-## Key fix from this session
-- HTTP Request2 body: use `={{ $json }}` NOT `={{ JSON.stringify($json) }}`
-- When rawContentType is application/json, n8n serializes the object automatically
-- Using JSON.stringify causes double-encoding — body gets sent as a JSON string instead of a JSON object
+## Key fixes from Phase 2
+- Slack unfurl auto-triggered reject: fixed with `unfurl_links: false` in message payload
+- Double `?` in resume URL: fixed by using `&action=approve` instead of `?action=approve`
+- IF node condition: `{{ $json.query.action }}` equals `approve` (string, fixed mode)
 
 ## Where we left off
-- Phase 1 complete
-- Ready to start Phase 2: Slack approval step before auto-posting
+- Phase 2, item 1 (Slack approval) complete and tested
+- Ready to start Phase 2, item 2: duplicate checker
 
 ## Pending items
-- Rotate Anthropic API key (was exposed in httpbin debug output — visible in this session too, rotate ASAP)
-- Rotate LinkedIn Bearer token (was exposed in httpbin debug output this session)
-- X image posting (requires OAuth 1.0a — deferred to later phase)
+- Rotate Anthropic API key (was exposed in httpbin debug output — rotate ASAP)
+- Rotate LinkedIn Bearer token (was exposed in httpbin debug output)
+- X image posting (requires OAuth 1.0a — deferred)
+- Phase 2, item 2: Duplicate checker (skip if same topic posted in last 30 days)
+- Phase 2, item 3: Brand voice system prompt refinement
 
 ## Docker start command (required for X and LinkedIn OAuth2)
 ```bash
 docker run -it --rm -p 5678:5678 -e N8N_EDITOR_BASE_URL=https://refusable-beneficially-gemma.ngrok-free.dev -e WEBHOOK_URL=https://refusable-beneficially-gemma.ngrok-free.dev -v n8n-docker_n8n_data:/home/node/.n8n n8nio/n8n
 ```
 ngrok static domain — does not change on restart.
-
-## Next steps (Phase 2)
-1. Add Slack approval step — workflow pauses, sends preview to Slack, waits for approve/reject
-2. On approve → post to X and LinkedIn
-3. On reject → discard or allow editing
